@@ -116,19 +116,28 @@ export default function CandidateResume() {
         const apiData = await res.json();
         await stepPromise;
 
-        if (apiData.success && apiData.candidate) {
-          const { data: withUrl } = await supabase
+        //handleUpload
+        if (apiData.success) {
+          if (resumeUrl) {
+            await supabase
+             .from("candidates")
+             .update({ resume_url: resumeUrl })
+             .eq("email", user.email);
+          }
+
+          await new Promise(r => setTimeout(r, 500));
+          const { data: fresh } = await supabase
             .from("candidates")
-            .update({ resume_url: resumeUrl })
+            .select("*")
             .eq("email", user.email)
-            .select()
             .maybeSingle();
-          finalCandidate = withUrl || apiData.candidate;
+
+          finalCandidate = fresh;
         }
       } else {
         await runSteps();
         const newAI = Math.min(100, (candidate?.ai_score || 55) + Math.floor(Math.random()*12)+5);
-        const { data: updated } = await supabase
+        await supabase
           .from("candidates")
           .update({
             resume_url: resumeUrl,
@@ -136,10 +145,15 @@ export default function CandidateResume() {
             jd_match:   newAI - 5,
             status:     "Reviewing",
           })
+          .eq("email", user.email);
+
+        // Re-fetch fresh
+       const { data: fresh } = await supabase
+          .from("candidates")
+          .select("*")
           .eq("email", user.email)
-          .select()
           .maybeSingle();
-        finalCandidate = updated;
+        finalCandidate = fresh;
       }
 
       if (finalCandidate) {
