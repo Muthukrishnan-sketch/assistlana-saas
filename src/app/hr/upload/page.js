@@ -16,7 +16,6 @@ const PARSE_STEPS = [
   { label:"Saving candidate to database",    icon:"💾" },
 ];
 
-// ── Extract name from filename (fallback) ──
 function extractNameFromFilename(filename) {
   let name = filename
     .replace(/\.(pdf|docx|doc)$/i, "")
@@ -33,7 +32,6 @@ function extractNameFromFilename(filename) {
     .join(" ") || "Unknown";
 }
 
-// ── Fallback simulation (used when backend offline) ──
 function simulateAIExtraction(filename) {
   const skillSets = [
     ["React","Node.js","Python","AWS"],
@@ -78,13 +76,17 @@ export default function HRUpload() {
   const [error,       setError]       = useState("");
   const [backendMode, setBackendMode] = useState(false);
 
+  const BACKEND = typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:8000"
+    : "https://assistlana-backend.onrender.com";
+
+  // ── Only auth check + health check go inside useEffect ──
   useEffect(() => {
     const stored = localStorage.getItem("hr_user");
     if (!stored) router.push("/");
     else setUser(JSON.parse(stored));
 
-    // Check if backend is running
-    fetch("https://assistlana-backend.onrender.com/api/health")
+    fetch(`${BACKEND}/api/health`, { signal: AbortSignal.timeout(10000) })
       .then(r => r.json())
       .then(() => setBackendMode(true))
       .catch(() => setBackendMode(false));
@@ -125,13 +127,12 @@ export default function HRUpload() {
   const parseWithBackend = async (file, resumeUrl) => {
     const formData = new FormData();
     formData.append("file", file);
-    const res  = await fetch("https://assistlana-backend.onrender.com/api/resume/parse-and-save", {
+    const res  = await fetch(`${BACKEND}/api/resume/parse-and-save`, {
       method: "POST",
       body:   formData,
     });
     const data = await res.json();
     if (data.success && data.candidate) {
-      // Update resume_url in Supabase
       if (resumeUrl && data.candidate.id) {
         await supabase.from("candidates")
           .update({ resume_url: resumeUrl })
@@ -187,19 +188,15 @@ export default function HRUpload() {
     for (let i = 0; i < files.length; i++) {
       if (files[i].status !== "ready") continue;
 
-      // Mark as parsing
       setFiles(prev => prev.map((f,j) => j===i ? {...f, status:"parsing"} : f));
 
-      // Animate steps for first file
       if (isFirst) { await runParseSteps(); isFirst = false; }
       else         { await new Promise(r => setTimeout(r, 800)); }
 
-      // Upload to Supabase Storage
       const resumeUrl = await uploadToStorage(files[i].raw);
 
       let result = null;
 
-      // ── Try real backend first ──
       if (backendMode) {
         try {
           result = await parseWithBackend(files[i].raw, resumeUrl);
@@ -209,7 +206,6 @@ export default function HRUpload() {
         }
       }
 
-      // ── Fallback: simulate if backend unavailable ──
       if (!result) {
         const extracted      = simulateAIExtraction(files[i].name);
         extracted.resume_url = resumeUrl;
@@ -247,9 +243,7 @@ export default function HRUpload() {
               <div className="flex items-center gap-2 mt-0.5">
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${backendMode ? "bg-green-500" : "bg-yellow-400"}`}/>
                 <div className="text-xs text-slate-400 truncate">
-                  {backendMode
-                    ? "AI Backend connected"
-                    : "Simulation mode"}
+                  {backendMode ? "AI Backend connected" : "Simulation mode"}
                 </div>
               </div>
             </div>
@@ -416,7 +410,7 @@ export default function HRUpload() {
                 </div>
               )}
 
-              {/* Recent Uploads with timestamp */}
+              {/* Recent Uploads */}
               <div className="mt-6 bg-white rounded-2xl border border-[#E2E8F0] p-4 md:p-5">
                 <div className="font-bold text-[#1E293B] mb-4 text-sm md:text-base">📋 Recent Uploads & Applications</div>
                 <div className="space-y-3">
@@ -491,10 +485,10 @@ export default function HRUpload() {
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {[
-                  ["Parse Time",  "< 5s"                               ],
-                  ["Mode",        backendMode ? "Real AI" : "Simulation"],
-                  ["Saved To",    "Supabase DB"                         ],
-                  ["Format",      "PDF · DOCX"                          ],
+                  ["Parse Time",  "< 5s"                                                              ],
+                  ["Mode",        backendMode ? "Real AI" : "Waking up AI backend... please wait 30s"],
+                  ["Saved To",    "Supabase DB"                                                       ],
+                  ["Format",      "PDF · DOCX"                                                        ],
                 ].map(([l, v]) => (
                   <div key={l} className="bg-[#F8FAFC] rounded-xl p-3 text-center">
                     <div className="text-sm font-bold text-[#1253A4]">{v}</div>
@@ -503,6 +497,7 @@ export default function HRUpload() {
                 ))}
               </div>
             </div>
+
           </div>
         </div>
       </div>

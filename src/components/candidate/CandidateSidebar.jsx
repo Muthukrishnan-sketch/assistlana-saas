@@ -1,14 +1,16 @@
 "use client";
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, FileText, ClipboardList, LogOut, Brain, Menu, X, Settings } from "lucide-react";
+import { LayoutDashboard, Briefcase, FileText, ClipboardList, LogOut, Brain, Menu, X, Settings, PenLine, FlaskConical } from "lucide-react";
 
 const NAV = [
-  { label:"Dashboard",    icon: LayoutDashboard, href:"/candidate/dashboard"    },
-  { label:"Browse Jobs",  icon: Briefcase,       href:"/candidate/jobs"         },
-  { label:"My Resume",    icon: FileText,        href:"/candidate/resume"       },
-  { label:"Applications", icon: ClipboardList,   href:"/candidate/applications" },
-  { label:"Settings",     icon: Settings,        href:"/candidate/settings"     },
+  { label:"Dashboard",      icon: LayoutDashboard, href:"/candidate/dashboard"       },
+  { label:"Browse Jobs",    icon: Briefcase,       href:"/candidate/jobs"            },
+  { label:"My Resume",      icon: FileText,        href:"/candidate/resume"          },
+  { label:"Applications",   icon: ClipboardList,   href:"/candidate/applications"    },
+  { label:"Resume Builder", icon: PenLine,         href:"/candidate/resume-builder"  },
+  { label:"Skill Test",     icon: FlaskConical,    href:"/candidate/skill-test"      },
+  { label:"Settings",       icon: Settings,        href:"/candidate/settings"        },
 ];
 
 export default function CandidateSidebar({ user }) {
@@ -52,7 +54,7 @@ export default function CandidateSidebar({ user }) {
           </button>
         </div>
 
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 overflow-y-auto">
           <div className="text-xs text-white/30 font-semibold uppercase tracking-widest mb-3 px-2">My Portal</div>
           {NAV.map((item) => {
             const Icon = item.icon;
