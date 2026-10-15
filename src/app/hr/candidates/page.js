@@ -34,7 +34,7 @@ export default function HRCandidates() {
     const { data, error } = await supabase
       .from("candidates")
       .select("*")
-      .order("ai_score", { ascending: false });
+      .order("created_at", { ascending: false });
     if (!error && data) setCandidates(data);
     setLoading(false);
   };
@@ -408,7 +408,7 @@ export default function HRCandidates() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                    {["Candidate","Location","Age","Qualification","AI Score","JD Match","Status","Actions"].map(h => (
+                    {["Candidate","Location","Age","Qualification","AI Score","JD Match","Status","Uploaded","Actions"].map(h => (
                       <th key={h} className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wide py-3 px-3 whitespace-nowrap">
                         {h}
                       </th>
@@ -471,6 +471,10 @@ export default function HRCandidates() {
                       {/* Status */}
                       <td className="py-3 px-3">
                         <StatusBadge status={c.status}/>
+                      </td>
+                      {/* Uploaded */}
+                      <td className="py-3 px-3 text-xs text-slate-400 whitespace-nowrap">
+                        {c.created_at ? new Date(c.created_at).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" }) : "—"}
                       </td>
 
                       {/* Actions */}
